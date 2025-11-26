@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Video Tool - Preview URL</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center p-4">
+  <div class="w-full max-w-xl">
+    <!-- Card -->
+    <div class="bg-slate-800/80 backdrop-blur rounded-2xl shadow-xl border border-slate-700 p-6 md:p-8">
+      <header class="mb-6 text-center">
+        <h1 class="text-2xl md:text-3xl font-semibold tracking-tight mb-2">
+          Video URL Preview
+        </h1>
+        <p class="text-sm md:text-base text-slate-300">
+          Masukkan link video YouTube, TikTok, Facebook, atau Instagram untuk
+          <span class="font-semibold">menampilkan preview / membuka link</span>.
+          Tidak ada proses download.
+        </p>
+      </header>
+
+      <!-- Form -->
+      <form id="videoForm" class="space-y-4">
+        <div>
+          <label for="videoUrl" class="block text-sm font-medium mb-2">
+            URL Video
+          </label>
+          <input
+            id="videoUrl"
+            type="url"
+            required
+            placeholder="Contoh: https://youtu.be/xxxx atau https://www.youtube.com/watch?v=xxxx"
+            class="w-full rounded-xl border border-slate-600 bg-slate-900/70 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-slate-500"
+          />
+        </div>
+
+        <div class="flex items-center justify-between text-xs text-slate-400">
+          <span>Didukung: YouTube (embed), TikTok / FB / IG (link langsung).</span>
+        </div>
+
+        <button
+          type="submit"
+          class="w-full mt-2 inline-flex items-center justify-center rounded-xl bg-indigo-500 px-4 py-2.5 text-sm font-semibold hover:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-slate-900 transition"
+        >
+          Tampilkan Preview
+        </button>
+      </form>
+
+      <!-- Hasil -->
+      <div id="resultContainer" class="mt-6 hidden">
+        <div
+          id="infoBox"
+          class="mb-3 rounded-xl border border-slate-700 bg-slate-900/60 px-4 py-3 text-xs text-slate-200"
+        ></div>
+
+        <div id="playerWrapper" class="rounded-xl overflow-hidden border border-slate-700 bg-black">
+          <!-- Iframe YouTube akan dimasukkan dengan JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer kecil -->
+    <p class="mt-4 text-center text-xs text-slate-500">
+      Template by ChatGPT · Hanya untuk preview video yang kamu punya hak aksesnya.
+    </p>
+  </div>
+
+  <script>
+    const form = document.getElementById("videoForm");
+    const urlInput = document.getElementById("videoUrl");
+    const resultContainer = document.getElementById("resultContainer");
+    const infoBox = document.getElementById("infoBox");
+    const playerWrapper = document.getElementById("playerWrapper");
+
+    function detectPlatform(url) {
+      const lower = url.toLowerCase();
+      if (lower.includes("youtube.com") || lower.includes("youtu.be")) return "youtube";
+      if (lower.includes("tiktok.com")) return "tiktok";
+      if (lower.includes("facebook.com") || lower.includes("fb.watch")) return "facebook";
+      if (lower.includes("instagram.com")) return "instagram";
+      return "unknown";
+    }
+
+    function getYouTubeId(url) {
+      // Coba ambil ID dari berbagai format
+      const regExp =
+        /(?:youtube\.com\/(?:.*v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/;
+      const match = url.match(regExp);
+      return match ? match[1] : null;
+    }
+
+    function showYouTubeEmbed(videoId) {
+      playerWrapper.innerHTML = `
+        <div class="w-full aspect-video">
+          <iframe
+            class="w-full h-full"
+            src="https://www.youtube.com/embed/${videoId}"
+            title="YouTube video player"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+          ></iframe>
+        </div>
+      `;
+      infoBox.textContent =
+        "Menampilkan video dengan embed resmi YouTube (tanpa download).";
+      resultContainer.classList.remove("hidden");
+    }
+
+    function showExternalLinkMessage(platform, url) {
+      let platformName = platform;
+      if (platform === "tiktok") platformName = "TikTok";
+      if (platform === "facebook") platformName = "Facebook";
+      if (platform === "instagram") platformName = "Instagram";
+      if (platform === "unknown") platformName = "platform ini";
+
+      playerWrapper.innerHTML = `
+        <div class="p-4 text-sm text-slate-200">
+          <p class="mb-2">
+            Embed otomatis untuk <span class="font-semibold">${platformName}</span> belum dibuat di template ini.
+          </p>
+          <p class="mb-3">
+            Kamu masih bisa membuka videonya langsung lewat tombol di bawah:
+          </p>
+          <a
+            href="${url}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center rounded-lg bg-indigo-500 px-4 py-2 text-xs font-semibold hover:bg-indigo-600 transition"
+          >
+            Buka Video di Tab Baru
+          </a>
+        </div>
+      `;
+      infoBox.textContent =
+        "Untuk TikTok / Facebook / Instagram, template ini hanya membuka link resmi (tanpa download).";
+      resultContainer.classList.remove("hidden");
+    }
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const url = urlInput.value.trim();
+      if (!url) return;
+
+      const platform = detectPlatform(url);
+
+      if (platform === "youtube") {
+        const videoId = getYouTubeId(url);
+        if (videoId) {
+          showYouTubeEmbed(videoId);
+        } else {
+          infoBox.textContent =
+            "URL YouTube tidak dikenali. Pastikan formatnya benar (contoh: https://www.youtube.com/watch?v=xxxxx).";
+          playerWrapper.innerHTML = "";
+          resultContainer.classList.remove("hidden");
+        }
+      } else {
+        showExternalLinkMessage(platform, url);
+      }
+    });
+  </script>
+</body>
+</html>
